@@ -28,11 +28,14 @@ class Minesweeper():
 
     def __init__(self, height: int = 9, width: int = 9, mines: int = 10):
 
-        # Set initial width, height, and number of mines
+        # Set initial width, height
         self.height: int = height
         self.width: int = width
+
+        # Set of mines, flags, and revealed cells
         self.mines: set[tuple[int, int]] = set()
         self.flags: set[tuple[int, int]] = set()
+        self.revealed: set[tuple[int, int]] = set()
 
         # If the next click is a first click
         self.firstclick: bool = True
@@ -56,19 +59,25 @@ class Minesweeper():
                 self.mines.add((i, j))
                 self.board[i][j] = -1
 
-        # populate hidden board
-        for i in range(self.height):
-            for j in range(self.width):
-                if self.board[i][j] != -1:
-                    self.board[i][j] = self.nearby_mines((i, j))
+        # populate board
+        self.populate_board()
 
-        # initialize player board
+        # initialize visible board
         self.vboard: list[list[int]] = []
         for i in range(self.height):
             row = []
             for j in range(self.width):
                 row.append(-2)
             self.vboard.append(row)
+
+    def populate_board(self):
+        """
+        Calculates numbers on hidden board.
+        """
+        for i in range(self.height):
+            for j in range(self.width):
+                if self.board[i][j] != -1:
+                    self.board[i][j] = self.nearby_mines((i, j))
 
     def print_board(self):
         """
@@ -150,21 +159,28 @@ class Minesweeper():
             if swapj == self.width:
                 swapj = 0
                 swapi += 1
+        
+        # Swap mines on board
         self.board[swapi][swapj] = -1
         self.board[i][j] = 0
 
-        # re-populate hidden board
-        for i in range(self.height):
-            for j in range(self.width):
-                if self.board[i][j] != -1:
-                    self.board[i][j] = self.nearby_mines((i, j))
+        # Recalculate visible board
+        self.populate_board()
+
+        # Update set of mines
+        self.mines.remove((i, j))
+        self.mines.add((swapi, swapj))
 
     def reveal(self, cell: tuple[int, int]):
         """
         Reveal a cell (edits the visible board).
         The cell has to be safe, or there will be a runtime error.
         """
+
         i, j = cell
+
+        # reveal cell
+        self.revealed.add(cell)
 
         if self.board[i][j] == -1:
             raise RuntimeError("Revealed a mine!")
@@ -173,15 +189,16 @@ class Minesweeper():
         elif self.board[i][j] == 0:
             self.vboard[i][j] = 0
 
-            # Loop over all cells within one row and column
-            for i in range(cell[0] - 1, cell[0] + 2):
-                for j in range(cell[1] - 1, cell[1] + 2):
 
-                    # Ignore the cell itself
-                    if (i, j) != cell:
+            # Loop over all cells within one row and column
+            for k in range(cell[0] - 1, cell[0] + 2):
+                for l in range(cell[1] - 1, cell[1] + 2):
+
+                    # Ignore revealed cells, including the cell itself
+                    if (k, l) not in self.revealed:
                         # Reveal neighbour
-                        if 0 <= i < self.height and 0 <= j < self.width:
-                            self.reveal((i, j))
+                        if 0 <= k < self.height and 0 <= l < self.width:
+                            self.reveal((k, l))
 
         else:
             self.vboard[i][j] = self.board[i][j]
@@ -191,6 +208,9 @@ class Minesweeper():
         Flags cell as a mine (on the visible board).
         """
         i, j = cell
+        if len(self.flags) > len(self.mines):
+            # Too many flags!
+            self.failed = True
         self.vboard[i][j] = -3
         self.flags.add(cell)
 
@@ -207,83 +227,6 @@ class Minesweeper():
             return None
 
 
-class MinesweeperAI():
-    """
-    Minesweeper game player
-    """
-
-    def __init__(self, height=8, width=8):
-
-        # Set initial height and width
-        self.height = height
-        self.width = width
-
-        # Keep track of which cells have been clicked on
-        self.moves_made = set()
-
-        # Keep track of cells known to be safe or mines
-        self.mines = set()
-        self.safes = set()
-
-        # List of sentences about the game known to be true
-        self.knowledge = []
-
-    def mark_mine(self, cell):
-        """
-        Marks a cell as a mine, and updates all knowledge
-        to mark that cell as a mine as well.
-        """
-        self.mines.add(cell)
-        for sentence in self.knowledge:
-            sentence.mark_mine(cell)
-
-    def mark_safe(self, cell):
-        """
-        Marks a cell as safe, and updates all knowledge
-        to mark that cell as safe as well.
-        """
-        self.safes.add(cell)
-        for sentence in self.knowledge:
-            sentence.mark_safe(cell)
-
-    def add_knowledge(self, cell, count):
-        """
-        Called when the Minesweeper board tells us, for a given
-        safe cell, how many neighboring cells have mines in them.
-
-        This function should:
-            1) mark the cell as a move that has been made
-            2) mark the cell as safe
-            3) add a new sentence to the AI's knowledge base
-               based on the value of `cell` and `count`
-            4) mark any additional cells as safe or as mines
-               if it can be concluded based on the AI's knowledge base
-            5) add any new sentences to the AI's knowledge base
-               if they can be inferred from existing knowledge
-        """
-        raise NotImplementedError
-
-    def make_safe_move(self):
-        """
-        Returns a safe cell to choose on the Minesweeper board.
-        The move must be known to be safe, and not already a move
-        that has been made.
-
-        This function may use the knowledge in self.mines, self.safes
-        and self.moves_made, but should not modify any of those values.
-        """
-        raise NotImplementedError
-
-    def make_random_move(self):
-        """
-        Returns a move to make on the Minesweeper board.
-        Should choose randomly among cells that:
-            1) have not already been chosen, and
-            2) are not known to be mines
-        """
-        raise NotImplementedError
-
-
 if __name__ == "__main__":
     times = []
     outcomes = []
@@ -294,16 +237,20 @@ if __name__ == "__main__":
         while game.outcome() is None:
             board = game.vboard
             start = time.perf_counter()
-            game.click(SOLVER(board))
+            click, cell = SOLVER(board)
+            if click:
+                game.click(cell)
+            else:
+                game.flag(cell)
             end = time.perf_counter()
             steptimes.append(end - start)
         times.append(sum(steptimes))
         outcomes.append(game.outcome())
 
     print(
-        f"Minimum time {min(times)}s, Average time {sum(times) / NUM_GAMES}s (over {NUM_GAMES} trials)"
+        f"Minimum time {min(times)}s, Average time {sum(times) / NUM_GAMES}s (over {NUM_GAMES} games)"
     )
 
     print(
-        0
+        f"Won {sum(outcomes)} of {NUM_GAMES} games, success rate {sum(outcomes) / NUM_GAMES}"
     )
