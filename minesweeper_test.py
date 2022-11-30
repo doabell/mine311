@@ -1,4 +1,4 @@
-import sys, unittest
+import unittest
 import minesweeper as m
 
 class BoardSetupTest(unittest.TestCase):
