@@ -3,7 +3,7 @@ import minesweeper as m
 
 class BoardSetupTest(unittest.TestCase):
     def setUp(self):
-        self.game = m.Minesweeper(7, 13, 9)
+        self.game = m.MineSweeperGame(7, 13, 9)
 
     def test_board_setup(self):
         """
@@ -15,7 +15,9 @@ class BoardSetupTest(unittest.TestCase):
 
         # Game board
         self.assertEqual(len(self.game.board), 7)
-        self.assertEqual(len(self.game.board[0]), 13)
+        for i, row in enumerate(self.game.board):
+            with self.subTest(i = i):
+                self.assertEqual(len(row), 13)
 
         # Game board should be in (-2, 9)
         for row in self.game.board:
@@ -47,7 +49,7 @@ class BoardSetupTest(unittest.TestCase):
     
 class GameTest(unittest.TestCase):
     def setUp(self):
-        self.game = m.Minesweeper(5, 5, 5)
+        self.game = m.MineSweeperGame(5, 5, 5)
         self.game.board = [
             [-1, -1, 0, 0, 0],
             [0, 0, 0, 0, 0],
@@ -176,7 +178,7 @@ class GameTest(unittest.TestCase):
 
 class FirstMineTest(unittest.TestCase):
     def setUp(self):
-        self.game = m.Minesweeper(5, 5, 5)
+        self.game = m.MineSweeperGame(5, 5, 5)
         self.game.board = [
             [-1, -1, 0, 0, 0],
             [0, 0, 0, 0, 0],
@@ -260,7 +262,7 @@ class FirstMineTest(unittest.TestCase):
         Test that shifting mines also works for the second (and third) row.
         """
         # Initialize scenario
-        game = m.Minesweeper(4, 4, 8)
+        game = m.MineSweeperGame(4, 4, 8)
         game.board = [
             [-1, -1, -1, -1],
             [-1, -1, -1, -1],

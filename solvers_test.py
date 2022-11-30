@@ -30,7 +30,7 @@ def make_tests(solver: Callable[[list[list[int]]], tuple[bool, tuple[int, int]]]
                     for i in range(NUM_GAMES):
                         # create game
                         h, w, mines = diff
-                        game = m.Minesweeper(h, w, mines)
+                        game = m.MineSweeperGame(h, w, mines)
                         # Run game
                         while game.outcome() is None:
                             board = game.vboard
@@ -46,7 +46,7 @@ def make_tests(solver: Callable[[list[list[int]]], tuple[bool, tuple[int, int]]]
             Solves a trivial game.
             """
             # Set up trivial game
-            trivial = m.Minesweeper(5, 5, 1)
+            trivial = m.MineSweeperGame(5, 5, 1)
             trivial.board = [
                 [-1, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],

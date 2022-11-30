@@ -15,7 +15,7 @@ DIFFICULTY = EASY
 SOLVER = RandomClicker
 
 
-class Minesweeper():
+class MineSweeperGame():
     """
     Minesweeper game representation
     Adapted from https://cs50.harvard.edu/ai/2020/projects/1/minesweeper/
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     for i in range(NUM_GAMES):
         steptimes = []
         h, w, m = DIFFICULTY
-        game = Minesweeper(h, w, m)
+        game = MineSweeperGame(h, w, m)
         while game.outcome() is None:
             board = game.vboard
             start = time.perf_counter()
