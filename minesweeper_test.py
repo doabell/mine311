@@ -186,14 +186,36 @@ class FirstMineTest(unittest.TestCase):
         ]
         self.game.populate_board()
         self.game.mines = {(0, 0), (0, 1), (2, 1), (2, 3), (4, 3)}
+    
+    def test_top_left_mine_click(self):
+        """
+        Test clicking on the top left.
+        """
+        self.game.click((0, 0))
+        # Board should look like this
+        self.assertListEqual(
+                self.game.board,
+                [
+                    [1, -1, -1, 1, 0], 
+                    [2, 3, 4, 2, 1], 
+                    [1, -1, 2, -1, 1], 
+                    [1, 1, 3, 2, 2], 
+                    [0, 0, 1, -1, 1]
+                ]
+        )
 
-        # Click on a mine!
-        self.game.click((2, 1))
+        # Mine (0, 0) should become (0, 3)
+        self.assertSetEqual(
+            self.game.mines,
+            {(0, 2), (0, 1), (2, 1), (2, 3), (4, 3)}
+        )
 
     def test_game_board(self):
         """
         Test first click on mine.
         """
+        # Click on a mine!
+        self.game.click((2, 1))
         # Board should look like this
         self.assertListEqual(
                 self.game.board,
@@ -217,8 +239,11 @@ class FirstMineTest(unittest.TestCase):
 
     def test_vboard(self):
         """
-        Here vboard should cascade open.
+        Test that vboard should cascade open.
         """
+        # Click on a mine!
+        self.game.click((2, 1))
+
         self.assertListEqual(
             self.game.vboard,
             [
@@ -228,4 +253,45 @@ class FirstMineTest(unittest.TestCase):
                 [0, 0, 2, -2, -2],
                 [0, 0, 1, -2, -2]
             ]
+        )
+
+    def test_first_row_mines(self):
+        """
+        Test that shifting mines also works for the second (and third) row.
+        """
+        # Initialize scenario
+        game = m.Minesweeper(4, 4, 8)
+        game.board = [
+            [-1, -1, -1, -1],
+            [-1, -1, -1, -1],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ]
+        game.populate_board()
+        game.mines = {
+            (0, 0), (0, 1), (0, 2), (0, 3),
+            (1, 0), (1, 1), (1, 2), (1, 3),
+        }
+
+        # Click on a mine!
+        game.click((0, 3))
+
+        # Board should look like this
+        self.assertListEqual(
+                game.board,
+                [
+                    [-1, -1, -1, 3],
+                    [-1, -1, -1, -1],
+                    [-1, 4, 3, 2],
+                    [1, 1, 0, 0]
+                ]
+            )
+        
+        # List of mines should be updated
+        self.assertSetEqual(
+            game.mines,
+            {
+                (0, 0), (0, 1), (0, 2), (2, 0),
+                (1, 0), (1, 1), (1, 2), (1, 3),
+            }
         )
