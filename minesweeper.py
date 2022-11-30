@@ -1,10 +1,19 @@
 import itertools
 import random
+import time
+from typing import DefaultDict, Generator, Hashable, Iterable, List, Sequence, Tuple, Optional, Dict, Set
+from solvers import *
 
 # Difficulties in Microsoft Minesweeper
 EASY = (9, 9, 10)
 INTERMEDIATE = (16, 16, 40)
 EXPERT = (16, 30, 99)
+
+# Test parameters
+NUM_GAMES = 100
+DIFFICULTY = EASY
+SOLVER = RandomClicker
+
 
 class Minesweeper():
     """
@@ -46,13 +55,13 @@ class Minesweeper():
             if not self.board[i][j]:
                 self.mines.add((i, j))
                 self.board[i][j] = -1
-        
+
         # populate hidden board
         for i in range(self.height):
             for j in range(self.width):
                 if self.board[i][j] != -1:
                     self.board[i][j] = self.nearby_mines((i, j))
-        
+
         # initialize player board
         self.vboard = []
         for i in range(self.height):
@@ -60,7 +69,6 @@ class Minesweeper():
             for j in range(self.width):
                 row.append(-2)
             self.vboard.append(row)
-
 
     def print_board(self):
         """
@@ -76,7 +84,7 @@ class Minesweeper():
                 elif self.vboard[i][j] == -3:
                     print("|F", end="")
                 else:
-                    print(self.vboard[i][j], end = "")
+                    print(self.vboard[i][j], end="")
             print("|")
         print("--" * self.width + "-")
 
@@ -108,7 +116,7 @@ class Minesweeper():
                         count += 1
 
         return count
-    
+
     def click(self, cell):
         """
         Click on cell to progress the game.
@@ -127,8 +135,8 @@ class Minesweeper():
             self.failed = True
         else:
             # not a mine, reveal
-            self.reveal(self, cell)
-    
+            self.reveal(cell)
+
     def shift_mine(self, cell):
         """
         If first click and mine, swap with top-left until not a mine.
@@ -160,7 +168,7 @@ class Minesweeper():
 
         if self.board[i][j] == -1:
             raise RuntimeError("Revealed a mine!")
-        
+
         # if zero: reveal all neighbors
         elif self.board[i][j] == 0:
             self.vboard[i][j] = 0
@@ -185,12 +193,18 @@ class Minesweeper():
         i, j = cell
         self.vboard[i][j] = -3
         self.flags.add(cell)
-    
-    def won(self):
+
+    def outcome(self):
         """
-        If the game has been won.
+        Outcome of the game.
+        Returns None if in progress.
         """
-        return (self.flags == self.mines) and not self.failed
+        if self.failed:
+            return False
+        elif self.flags == self.mines:
+            return True
+        else:
+            return None
 
 
 class MinesweeperAI():
@@ -270,3 +284,26 @@ class MinesweeperAI():
         raise NotImplementedError
 
 
+if __name__ == "__main__":
+    times = []
+    outcomes = []
+    for i in range(NUM_GAMES):
+        steptimes = []
+        h, w, m = DIFFICULTY
+        game = Minesweeper(h, w, m)
+        while game.outcome() is None:
+            board = game.vboard
+            start = time.perf_counter()
+            game.click(SOLVER(board))
+            end = time.perf_counter()
+            steptimes.append(end - start)
+        times.append(sum(steptimes))
+        outcomes.append(game.outcome())
+
+    print(
+        f"Minimum time {min(times)}s, Average time {sum(times) / NUM_GAMES}s (over {NUM_GAMES} trials)"
+    )
+
+    print(
+        0
+    )
