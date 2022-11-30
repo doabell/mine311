@@ -1,7 +1,7 @@
 import itertools
 import random
 import time
-from typing import DefaultDict, Generator, Hashable, Iterable, List, Sequence, Tuple, Optional, Dict, Set
+from typing import Optional
 from solvers import *
 
 # Difficulties in Microsoft Minesweeper
@@ -26,22 +26,22 @@ class Minesweeper():
         -3: flag
     """
 
-    def __init__(self, height=9, width=9, mines=10):
+    def __init__(self, height: int = 9, width: int = 9, mines: int = 10):
 
         # Set initial width, height, and number of mines
-        self.height = height
-        self.width = width
-        self.mines = set()
-        self.flags = set()
+        self.height: int = height
+        self.width: int = width
+        self.mines: set[tuple[int, int]] = set()
+        self.flags: set[tuple[int, int]] = set()
 
         # If the next click is a first click
-        self.firstclick = True
+        self.firstclick: bool = True
 
         # Track failure
-        self.failed = False
+        self.failed: bool = False
 
         # Initialize an empty field with no mines
-        self.board = []
+        self.board: list[list[int]] = []
         for i in range(self.height):
             row = []
             for j in range(self.width):
@@ -63,7 +63,7 @@ class Minesweeper():
                     self.board[i][j] = self.nearby_mines((i, j))
 
         # initialize player board
-        self.vboard = []
+        self.vboard: list[list[int]] = []
         for i in range(self.height):
             row = []
             for j in range(self.width):
@@ -88,11 +88,11 @@ class Minesweeper():
             print("|")
         print("--" * self.width + "-")
 
-    def is_mine(self, cell):
+    def is_mine(self, cell: tuple[int, int]) -> bool:
         i, j = cell
         return self.board[i][j] == -1
 
-    def nearby_mines(self, cell):
+    def nearby_mines(self, cell: tuple[int, int]) -> int:
         """
         Returns the number of mines that are
         within one row and column of a given cell,
@@ -117,7 +117,7 @@ class Minesweeper():
 
         return count
 
-    def click(self, cell):
+    def click(self, cell: tuple[int, int]):
         """
         Click on cell to progress the game.
         If first click and mine, swap with top-left until not a mine.
@@ -137,7 +137,7 @@ class Minesweeper():
             # not a mine, reveal
             self.reveal(cell)
 
-    def shift_mine(self, cell):
+    def shift_mine(self, cell: tuple[int, int]):
         """
         If first click and mine, swap with top-left until not a mine.
         """
@@ -159,7 +159,7 @@ class Minesweeper():
                 if self.board[i][j] != -1:
                     self.board[i][j] = self.nearby_mines((i, j))
 
-    def reveal(self, cell):
+    def reveal(self, cell: tuple[int, int]):
         """
         Reveal a cell (edits the visible board).
         The cell has to be safe, or there will be a runtime error.
@@ -186,7 +186,7 @@ class Minesweeper():
         else:
             self.vboard[i][j] = self.board[i][j]
 
-    def flag(self, cell):
+    def flag(self, cell: tuple[int, int]):
         """
         Flags cell as a mine (on the visible board).
         """
@@ -194,7 +194,7 @@ class Minesweeper():
         self.vboard[i][j] = -3
         self.flags.add(cell)
 
-    def outcome(self):
+    def outcome(self) -> Optional[bool]:
         """
         Outcome of the game.
         Returns None if in progress.
