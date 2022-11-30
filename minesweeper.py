@@ -16,17 +16,35 @@ SOLVER = RandomClicker
 
 
 class MineSweeperGame():
-    """
-    Minesweeper game representation
+    """Representation of a minesweeper game.
+
     Adapted from https://cs50.harvard.edu/ai/2020/projects/1/minesweeper/
-    Numeric representations:
+
+    The game board is represented as follows:
         0-8: number of mines
         -1: mine
         -2: unknown
         -3: flag
+    
+    Attributes:
+        vboard (list[list[int]]): the visible game board to play with.
     """
 
     def __init__(self, height: int = 9, width: int = 9, mines: int = 10):
+        """Creates a minesweeper game.
+
+        Note:
+            There should at least be 1 safe block (mine < height * width).
+        
+        Args:
+            height (int): height of the game board.
+            width (int): width of the game board.
+            mines (int): number of mines on the game board.
+        """
+
+        # Constrain mine count
+        if mines >= height * width:
+            raise ValueError("There should at least be 1 safe block!")
 
         # Set initial width, height
         self.height: int = height
@@ -71,8 +89,8 @@ class MineSweeperGame():
             self.vboard.append(row)
 
     def populate_board(self):
-        """
-        Calculates numbers on hidden board.
+        """Calculates numbers on hidden board.
+        Modifies `self.board` in place.
         """
         for i in range(self.height):
             for j in range(self.width):
@@ -80,8 +98,7 @@ class MineSweeperGame():
                     self.board[i][j] = self.nearby_mines((i, j))
 
     def print_board(self):
-        """
-        Prints the current visible board.
+        """Prints the current visible board.
         """
         for i in range(self.height):
             print("--" * self.width + "-")
@@ -102,10 +119,15 @@ class MineSweeperGame():
         return self.board[i][j] == -1
 
     def nearby_mines(self, cell: tuple[int, int]) -> int:
-        """
-        Returns the number of mines that are
-        within one row and column of a given cell,
+        """Returns the number of mines nearby.
+        Nearby: within one row and column of a given cell,
         not including the cell itself.
+
+        Args:
+            cell (tuple[int, int]): the cell to check for nearby mines.
+        
+        Returns:
+            int: number of mines neighboring `cell`, between 0 and 8 inclusive.
         """
 
         # Keep count of nearby mines
@@ -127,9 +149,17 @@ class MineSweeperGame():
         return count
 
     def click(self, cell: tuple[int, int]):
-        """
-        Click on cell to progress the game.
-        If first click and mine, swap with top-left until not a mine.
+        """Click on cell to progress the game.
+
+        If the first click is a mine,
+        `shift_mine()` is called to make that cell safe.
+
+        Otherwise, if clicked on a mine, end the game.
+
+        Otherwise reveal the cell and cascade.
+
+        Args:
+            cell (tuple[int, int]): the cell to click on.
         """
         i, j = cell
 
@@ -147,8 +177,11 @@ class MineSweeperGame():
             self.reveal(cell)
 
     def shift_mine(self, cell: tuple[int, int]):
-        """
-        If first click and mine, swap with top-left until not a mine.
+        """Swap `cell` with first non-mine cell from the top left.
+        If the first click is a mine, this is called.
+
+        Args:
+            cell (tuple[int, int]): the cell to make safe.
         """
         i, j = cell
         swapi = 0
@@ -172,9 +205,14 @@ class MineSweeperGame():
         self.mines.add((swapi, swapj))
 
     def reveal(self, cell: tuple[int, int]):
-        """
-        Reveal a cell (edits the visible board).
+        """Reveal a cell by changing `self.vboard` (the visible board).
+
+        This should only be called by other methods inside this class.
+
         The cell has to be safe, or there will be a runtime error.
+
+        Args:
+            cell (tuple[int, int]): the cell to reveal.
         """
 
         i, j = cell
@@ -204,8 +242,12 @@ class MineSweeperGame():
             self.vboard[i][j] = self.board[i][j]
 
     def flag(self, cell: tuple[int, int]):
-        """
-        Flags cell as a mine (on the visible board).
+        """Flags cell as a mine on `vboard` (the visible board).
+
+        The game is lost if the number of flags exceeds the number of mines.
+
+        Args:
+            cell (tuple[int, int]): the cell to flag.
         """
         i, j = cell
         if len(self.flags) > len(self.mines):
@@ -215,9 +257,10 @@ class MineSweeperGame():
         self.flags.add(cell)
 
     def outcome(self) -> Optional[bool]:
-        """
-        Outcome of the game.
-        Returns None if in progress.
+        """Outcome of the game.
+
+        Returns:
+            Optional[bool]: True if game is won, False if game is lost, None if game is still in progress.
         """
         if self.failed:
             return False
