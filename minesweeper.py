@@ -280,7 +280,7 @@ if __name__ == "__main__":
         while game.outcome() is None:
             board = game.vboard
             start = time.perf_counter()
-            click, cell = SOLVER(board)
+            click, cell = SOLVER(board, m)
             if click:
                 game.click(cell)
             else:

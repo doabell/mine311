@@ -22,10 +22,7 @@ Returns:
     )
 """
 
-def RandomClicker(board):
-    """
-    Clicks randomly.
-    Always fails, since it eventually clicks on a mine.
+def RandomClicker(board: list[list[int]], mines: int) -> tuple[bool, tuple[int, int]]:
     """Solver that clicks randomly.
     Eventually fails, since it eventually clicks on a mine.
     """
@@ -36,10 +33,7 @@ def RandomClicker(board):
     click = True
     return click, (i, j)
 
-def RandomFlagger(board):
-    """
-    Flags randomly.
-    Always fails, since it eventually exceeds the mine count.
+def RandomFlagger(board: list[list[int]], mines: int) -> tuple[bool, tuple[int, int]]:
     """Solver that flags randomly.
     Eventually fails, since it eventually exceeds the mine count.
     """
