@@ -14,7 +14,7 @@ NUM_GAMES = 10
 # TODO find some known solvable games to solve?
 # TODO write up a hard-coded solver to test these tests
 
-def make_tests(solver: Callable[[list[list[int]], int], tuple[bool, tuple[int, int]]], smart = True):
+def make_tests(GameSolver: type, smart = True):
     """
     Creates test cases for the solver.
     Smart: if solves_* should succeed.
@@ -31,10 +31,11 @@ def make_tests(solver: Callable[[list[list[int]], int], tuple[bool, tuple[int, i
                         # create game
                         h, w, mines = diff
                         game = m.MineSweeperGame(h, w, mines)
+                        solve = GameSolver(h, w, mines)
                         # Run game
                         while game.outcome() is None:
                             board = game.vboard
-                            click, cell = solver(board, mines)
+                            click, cell = solve.click(board)
                             if click:
                                 game.click(cell)
                             else:
@@ -47,6 +48,7 @@ def make_tests(solver: Callable[[list[list[int]], int], tuple[bool, tuple[int, i
             """
             # Set up trivial game
             trivial = m.MineSweeperGame(5, 5, 1)
+            solve = GameSolver(5, 5, 1)
             trivial.board = [
                 [-1, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
@@ -60,7 +62,7 @@ def make_tests(solver: Callable[[list[list[int]], int], tuple[bool, tuple[int, i
             # Run game
             while trivial.outcome() is None:
                 board = trivial.vboard
-                click, cell = solver(board, 1)
+                click, cell = solve.click(board)
                 if click:
                     trivial.click(cell)
                 else:

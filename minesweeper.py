@@ -30,7 +30,7 @@ class MineSweeperGame():
         vboard (list[list[int]]): the visible game board to play with.
     """
 
-    def __init__(self, height: int = 9, width: int = 9, mines: int = 10):
+    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10):
         """Creates a minesweeper game.
 
         Note:
@@ -39,11 +39,11 @@ class MineSweeperGame():
         Args:
             height (int): height of the game board.
             width (int): width of the game board.
-            mines (int): number of mines on the game board.
+            mine_count (int): number of mines on the game board.
         """
 
         # Constrain mine count
-        if mines >= height * width:
+        if mine_count >= height * width:
             raise ValueError("There should at least be 1 safe block!")
 
         # Set initial width, height
@@ -70,7 +70,7 @@ class MineSweeperGame():
             self.board.append(row)
 
         # Add mines randomly
-        while len(self.mines) != mines:
+        while len(self.mines) != mine_count:
             i = random.randrange(height)
             j = random.randrange(width)
             if not self.board[i][j]:
@@ -277,10 +277,11 @@ if __name__ == "__main__":
         steptimes = []
         h, w, m = DIFFICULTY
         game = MineSweeperGame(h, w, m)
+        solve = SOLVER(h, w, m)
         while game.outcome() is None:
             board = game.vboard
             start = time.perf_counter()
-            click, cell = SOLVER(board, m)
+            click, cell = solve.click(board)
             if click:
                 game.click(cell)
             else:
