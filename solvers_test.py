@@ -1,6 +1,5 @@
 import unittest
 import minesweeper as m
-from typing import Callable
 from solvers import *
 
 # Difficulties in Microsoft Minesweeper
@@ -14,15 +13,16 @@ NUM_GAMES = 10
 # TODO find some known solvable games to solve?
 # TODO write up a hard-coded solver to test these tests
 
-def make_tests(GameSolver: type, smart = True):
+def make_tests(SolverClass: type, smart = True) -> type[unittest.TestCase]:
     """
     Creates test cases for the solver.
-    Smart: if solves_* should succeed.
+    Args:
+        SolverClass (type): Name of class for the solver.
+        smart (bool): if solves_* should succeed.
     """
     class GameTests(unittest.TestCase):
         def test_game_ends(self):
-            """
-            Game should always end.
+            """Game should always end.
             """
             # Run multiple levels
             for diff in [EASY, INTERMEDIATE, EXPERT]:
@@ -31,7 +31,7 @@ def make_tests(GameSolver: type, smart = True):
                         # create game
                         h, w, mines = diff
                         game = m.MineSweeperGame(h, w, mines)
-                        solve = GameSolver(h, w, mines)
+                        solve = SolverClass(h, w, mines)
                         # Run game
                         while game.outcome() is None:
                             board = game.vboard
@@ -43,12 +43,11 @@ def make_tests(GameSolver: type, smart = True):
                         self.assertIsNotNone(game.outcome())
 
         def test_solves_trivial_game(self):
-            """
-            Solves a trivial game.
+            """Solves a trivial game.
             """
             # Set up trivial game
             trivial = m.MineSweeperGame(5, 5, 1)
-            solve = GameSolver(5, 5, 1)
+            solve = SolverClass(5, 5, 1)
             trivial.board = [
                 [-1, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
