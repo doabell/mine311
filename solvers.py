@@ -1,8 +1,9 @@
 import random
 
+
 def find_neighbors(index: tuple[int, int], height: int = 9, width: int = 9) -> list[tuple[int, int]]:
     """Returns a list of neighbors for a tile.
-    
+
     Args:
         index (tuple[int, int]): tile to search neighbors for
         height (int): x-axis size (lists)
@@ -47,12 +48,13 @@ class Solver:
             (int, int): the
         )
     """
+
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         """Initializes the solver.
 
         Note:
             There is at least be 1 safe block (mine < height * width).
-        
+
         Args:
             height (int): height of the game board.
             width (int): width of the game board.
@@ -83,7 +85,7 @@ class Solver:
 
         Args:
             board (list[list[int]]): the currently visible game board.
-        
+
         Returns:
             (
                 bool: whether this is a click action (True) or flag action (False).
@@ -98,6 +100,7 @@ class RandomClicker(Solver):
     """Solver that clicks randomly.
     Eventually fails, since it eventually clicks on a mine.
     """
+
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         super().__init__(height, width, mine_count)
 
@@ -112,6 +115,7 @@ class RandomFlagger(Solver):
     """Solver that flags randomly.
     Eventually fails, since it eventually exceeds the mine count.
     """
+
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         super().__init__(height, width, mine_count)
 
@@ -124,8 +128,9 @@ class RandomFlagger(Solver):
 
 class CSPSolver(Solver):
     """Solves Minesweeper with CSP.
-    
+
     """
+
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         super().__init__(height, width, mine_count)
 
@@ -138,7 +143,7 @@ class CSPSolver(Solver):
 
         # TODO what is this
         self.deleted_constraints: list = []
-    
+
     def click(self, board: list[list[int]]) -> tuple[bool, tuple[int, int]]:
         # Make deductions
         self.prune()
@@ -156,22 +161,24 @@ class CSPSolver(Solver):
         # Pop a flag action
         if len(self.to_flag) > 0:
             return False, self.to_flag.pop()
-        
+
         # No actions exist
         # TODO Click on random mine
-        
+
         return super().click(board)
-    
+
     def prune(self):
         pass
 
     def add_constraints(self):
         for cell in self.revealed:
-            if self.vboard[cell[0]][cell[1]]!=0:
+            if self.vboard[cell[0]][cell[1]] != 0:
                 if (cell not in self.constraints) and (cell not in self.deleted_constraints):
                     i, j = cell
-                    unknown_neighbors = {tile for tile in find_neighbors(cell) if self.vboard[i][j] == -2}
-                    self.constraints[cell]=[unknown_neighbors, self.vboard[cell[0]][cell[1]]]
+                    unknown_neighbors = {tile for tile in find_neighbors(
+                        cell) if self.vboard[i][j] == -2}
+                    self.constraints[cell] = [
+                        unknown_neighbors, self.vboard[cell[0]][cell[1]]]
                     for tile in find_neighbors(cell):
                         k, l = tile
                         if self.vboard[k][l] == -3:
@@ -182,4 +189,3 @@ class CSPSolver(Solver):
 
     def reduce_constraints(self):
         pass
-    

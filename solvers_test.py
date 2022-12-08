@@ -13,7 +13,8 @@ NUM_GAMES = 10
 # TODO find some known solvable games to solve?
 # TODO write up a hard-coded solver to test these tests
 
-def make_tests(SolverClass: type, smart = True) -> type[unittest.TestCase]:
+
+def make_tests(SolverClass: type, smart=True) -> type[unittest.TestCase]:
     """
     Creates test cases for the solver.
     Args:
@@ -26,7 +27,7 @@ def make_tests(SolverClass: type, smart = True) -> type[unittest.TestCase]:
             """
             # Run multiple levels
             for diff in [EASY, INTERMEDIATE, EXPERT]:
-                with self.subTest(difficulty = diff):
+                with self.subTest(difficulty=diff):
                     for i in range(NUM_GAMES):
                         # create game
                         h, w, mines = diff
@@ -66,14 +67,16 @@ def make_tests(SolverClass: type, smart = True) -> type[unittest.TestCase]:
                     trivial.click(cell)
                 else:
                     trivial.flag(cell)
-            
+
             # Game is solved
             self.assertEqual(trivial.outcome(), smart)
-    
+
     return GameTests
 
-class RandomClickerTest(make_tests(RandomClicker, smart = False)):
+
+class RandomClickerTest(make_tests(RandomClicker, smart=False)):
     pass
 
-class RandomFlaggerTest(make_tests(RandomFlagger, smart = False)):
+
+class RandomFlaggerTest(make_tests(RandomFlagger, smart=False)):
     pass

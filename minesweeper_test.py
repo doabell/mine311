@@ -1,6 +1,7 @@
 import unittest
 import minesweeper as m
 
+
 class BoardSetupTest(unittest.TestCase):
     def setUp(self):
         self.game = m.MineSweeperGame(7, 13, 9)
@@ -16,7 +17,7 @@ class BoardSetupTest(unittest.TestCase):
         # Game board
         self.assertEqual(len(self.game.board), 7)
         for i, row in enumerate(self.game.board):
-            with self.subTest(i = i):
+            with self.subTest(i=i):
                 self.assertEqual(len(row), 13)
 
         # Game board should be in (-2, 9)
@@ -25,13 +26,12 @@ class BoardSetupTest(unittest.TestCase):
                 self.assertGreater(col, -2)
                 self.assertLess(col, 9)
 
-
         # Number of mines
         self.assertEqual(len(self.game.mines), 9)
 
         # Game does not end
         self.assertIsNone(self.game.outcome())
-    
+
     def test_vboard_setup(self):
         """
         Test visible board is correctly set up
@@ -46,7 +46,7 @@ class BoardSetupTest(unittest.TestCase):
         # Game does not end
         self.assertIsNone(self.game.outcome())
 
-    
+
 class GameTest(unittest.TestCase):
     def setUp(self):
         self.game = m.MineSweeperGame(5, 5, 5)
@@ -96,7 +96,7 @@ class GameTest(unittest.TestCase):
 
         # Game does not end
         self.assertIsNone(self.game.outcome())
-    
+
     def test_mine_click(self):
         """
         Test normal click on mine.
@@ -159,7 +159,7 @@ class GameTest(unittest.TestCase):
         mines = {(0, 0), (0, 1), (2, 1), (2, 3), (4, 3)}
         for mine in mines:
             self.game.flag(mine)
-        
+
         # Game is won
         self.assertFalse(self.game.failed)
         self.assertTrue(self.game.outcome())
@@ -171,10 +171,11 @@ class GameTest(unittest.TestCase):
         mines = {(0, 0), (0, 1), (2, 1), (2, 3), (4, 3)}
         for mine in mines:
             self.game.flag(mine)
-        
+
         # Game is won
         self.assertFalse(self.game.failed)
         self.assertTrue(self.game.outcome())
+
 
 class FirstMineTest(unittest.TestCase):
     def setUp(self):
@@ -188,7 +189,7 @@ class FirstMineTest(unittest.TestCase):
         ]
         self.game.populate_board()
         self.game.mines = {(0, 0), (0, 1), (2, 1), (2, 3), (4, 3)}
-    
+
     def test_top_left_mine_click(self):
         """
         Test clicking on the top left.
@@ -196,14 +197,14 @@ class FirstMineTest(unittest.TestCase):
         self.game.click((0, 0))
         # Board should look like this
         self.assertListEqual(
-                self.game.board,
-                [
-                    [1, -1, -1, 1, 0], 
-                    [2, 3, 4, 2, 1], 
-                    [1, -1, 2, -1, 1], 
-                    [1, 1, 3, 2, 2], 
-                    [0, 0, 1, -1, 1]
-                ]
+            self.game.board,
+            [
+                [1, -1, -1, 1, 0],
+                [2, 3, 4, 2, 1],
+                [1, -1, 2, -1, 1],
+                [1, 1, 3, 2, 2],
+                [0, 0, 1, -1, 1]
+            ]
         )
 
         # Mine (0, 0) should become (0, 3)
@@ -220,22 +221,22 @@ class FirstMineTest(unittest.TestCase):
         self.game.click((2, 1))
         # Board should look like this
         self.assertListEqual(
-                self.game.board,
-                [
-                    [-1, -1, -1, 1, 0],
-                    [2, 3, 3, 2, 1],
-                    [0, 0, 1, -1, 1],
-                    [0, 0, 2, 2, 2],
-                    [0, 0, 1, -1, 1]
-                ]
-            )
+            self.game.board,
+            [
+                [-1, -1, -1, 1, 0],
+                [2, 3, 3, 2, 1],
+                [0, 0, 1, -1, 1],
+                [0, 0, 2, 2, 2],
+                [0, 0, 1, -1, 1]
+            ]
+        )
 
         # List of mines should be updated
         self.assertSetEqual(
             self.game.mines,
             {(0, 0), (0, 1), (0, 2), (2, 3), (4, 3)}
         )
-        
+
         # Game does not end
         self.assertIsNone(self.game.outcome())
 
@@ -280,15 +281,15 @@ class FirstMineTest(unittest.TestCase):
 
         # Board should look like this
         self.assertListEqual(
-                game.board,
-                [
-                    [-1, -1, -1, 3],
-                    [-1, -1, -1, -1],
-                    [-1, 4, 3, 2],
-                    [1, 1, 0, 0]
-                ]
-            )
-        
+            game.board,
+            [
+                [-1, -1, -1, 3],
+                [-1, -1, -1, -1],
+                [-1, 4, 3, 2],
+                [1, 1, 0, 0]
+            ]
+        )
+
         # List of mines should be updated
         self.assertSetEqual(
             game.mines,

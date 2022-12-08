@@ -25,7 +25,7 @@ class MineSweeperGame():
         -1: mine
         -2: unknown
         -3: flag
-    
+
     Attributes:
         vboard (list[list[int]]): the visible game board to play with.
     """
@@ -35,7 +35,7 @@ class MineSweeperGame():
 
         Note:
             There should at least be 1 safe block (mine < height * width).
-        
+
         Args:
             height (int): height of the game board.
             width (int): width of the game board.
@@ -125,7 +125,7 @@ class MineSweeperGame():
 
         Args:
             cell (tuple[int, int]): the cell to check for nearby mines.
-        
+
         Returns:
             int: number of mines neighboring `cell`, between 0 and 8 inclusive.
         """
@@ -192,7 +192,7 @@ class MineSweeperGame():
             if swapj == self.width:
                 swapj = 0
                 swapi += 1
-        
+
         # Swap mines on board
         self.board[swapi][swapj] = -1
         self.board[i][j] = 0
@@ -226,7 +226,6 @@ class MineSweeperGame():
         # if zero: reveal all neighbors
         elif self.board[i][j] == 0:
             self.vboard[i][j] = 0
-
 
             # Loop over all cells within one row and column
             for k in range(cell[0] - 1, cell[0] + 2):
