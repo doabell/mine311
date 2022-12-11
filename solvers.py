@@ -272,7 +272,7 @@ class EnumerationSolver(DeductionSolver):
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         # All configurations of board
         self.boards: list[list[list[int]]] = []
-        self.constraints: list[tuple[int, int]] = []
+
         super().__init__(height, width, mine_count)
 
     def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
@@ -295,7 +295,7 @@ class EnumerationSolver(DeductionSolver):
             self.firstclick = False
             return False, self.to_flag.pop()
 
-        # When actions exist
+        # When no actions exist
         if self.firstclick:
             # First click: top left
             self.firstclick = False
@@ -316,20 +316,6 @@ class EnumerationSolver(DeductionSolver):
     def enumerate_probs(self) -> queue.Queue[tuple[float, tuple[int, int]]]:
         """Enumerates mine configurations and calculates mine probabilities.
         """
-        # if new constraints added
-        if len(self.constraints) != 0:
-            # diff
-            constraints = [
-                constraint
-                for constraint in self.get_cells(1)
-                if constraint not in self.constraints
-            ]
-        else:
-            constraints = self.get_cells(1)
-
-        # Update constraints
-        self.constraints = self.get_cells(1)
-
         # Generate all possible boards
         if len(self.boards) == 0:
             # create new boards
@@ -348,7 +334,7 @@ class EnumerationSolver(DeductionSolver):
         boards = []
         for board in self.boards:
             valid = True
-            for cell in constraints:
+            for cell in self.get_cells(1):
                 mines = 0
                 for neighbor in get_neighbors(cell):
                     i, j = neighbor
@@ -372,6 +358,81 @@ class EnumerationSolver(DeductionSolver):
             probs.put((mines / total_boards, cell))
 
         return probs
+
+
+class CSPSolver(EnumerationSolver):
+    """Solves minesweeper as CSP
+
+    Constraints: numbered cells.
+    """
+
+    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
+        # List of number cells
+        self.constraints: list[tuple[int, list[tuple[int, int]]]] = []
+
+        super().__init__(height, width, mine_count)
+
+    def set_constraints(self):
+        """Update constraints on new input.
+        """
+        # Update constraints
+        for cell in self.get_cells(1):
+            self.constraints.append(
+                (
+                    self.get(cell),
+                    self.get_neighbors(cell, -2)
+                )
+            )
+
+    def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+        # Update board
+        self.vboard = vboard
+
+        # Make deductions
+        self.deduce()
+
+        # Solve with backtracking
+        self.run_backtrack()
+
+        # Remove revealed cells
+        self.revise_to_click()
+
+        # If actions exist:
+        # Pop a click action
+        if len(self.to_click) > 0:
+            self.firstclick = False
+            return True, self.to_click.pop()
+        # Pop a flag action
+        if len(self.to_flag) > 0:
+            self.firstclick = False
+            return False, self.to_flag.pop()
+
+        # When no actions exist
+        if self.firstclick:
+            # First click: top left
+            self.firstclick = False
+            cell = (0, 0)
+        else:
+            # Not first click: calculate probabilities
+            # if efficient, brute-force enumerate
+            mines_left = self.mine_count - len(self.get_cells(-3))
+            if math.comb(len(self.get_cells(-2)), mines_left) < MAX_COMBS:
+                probs = self.enumerate_probs()
+                prob, cell = probs.get()
+            else:
+                # Click on random unknown
+                cell = self.get_cells(-2).pop()
+
+        return True, cell
+
+    def run_backtrack(self):
+        pass
+
+    def backtrack(self) -> bool:
+        return False
+
+    def reduce(self):
+        pass
 
 
 """

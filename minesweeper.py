@@ -298,7 +298,7 @@ if __name__ == "__main__":
             outcomes.append(game.outcome())
 
         print(
-            f"Minimum time {min(times) * 1000 :.5f} ms, Average time {sum(times) / NUM_GAMES * 1000 :.5f} ms (over {NUM_GAMES} games)"
+            f"Minimum time {min(times) * 1000 :.5f} ms, Average time {sum(times) / NUM_GAMES * 1000 :.5f} ms"
         )
 
         print(
