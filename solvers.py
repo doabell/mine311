@@ -5,11 +5,22 @@ import math
 
 from typing import Optional, NamedTuple
 
+
 class Cell(NamedTuple):
-    """Cell class (a named tuple.)
+    """Cell class.
+
+    We started with tuple[int, int], so using a NamedTuple for maximum compatibility.
     """
     x: int
     y: int
+
+    def __eq__(self, other: object) -> bool:
+        """Equate coordinates for set diff in EquationSolver
+        """
+        if not isinstance(other, Cell):
+            return NotImplemented
+        return self.x == other.x and self.y == other.y
+
 
 MAX_COMBS = 10000
 
@@ -178,7 +189,8 @@ class RandomClicker(Solver):
 
     def click(self, board: list[list[int]]) -> tuple[bool, Cell]:
 
-        cell = Cell(random.randrange(self.height), random.randrange(self.width))
+        cell = Cell(random.randrange(self.height),
+                    random.randrange(self.width))
         click = True
 
         self.firstclick = False
@@ -195,7 +207,8 @@ class RandomFlagger(Solver):
         super().__init__(height, width, mine_count)
 
     def click(self, board: list[list[int]]) -> tuple[bool, Cell]:
-        cell = Cell(random.randrange(self.height), random.randrange(self.width))
+        cell = Cell(random.randrange(self.height),
+                    random.randrange(self.width))
         click = False
 
         self.firstclick = False
@@ -362,15 +375,17 @@ class EnumerationSolver(DeductionSolver):
         return probs
 
 
-class CSPSolver(EnumerationSolver):
-    """Solves minesweeper as CSP
+class EquationSolver(EnumerationSolver):
+    """Solves minesweeper as set of equation constraints
 
-    Constraints: numbered cells.
+    Constraints: sums (numbered tiles) and the corresponding cells.
+
+    TODO does not work as of now.
     """
 
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         # List of number cells
-        self.constraints: list[tuple[int, list[Cell]]] = []
+        self.constraints: list[tuple[Cell, int, set[Cell]]] = []
 
         super().__init__(height, width, mine_count)
 
@@ -381,8 +396,9 @@ class CSPSolver(EnumerationSolver):
         for cell in self.get_cells(1):
             self.constraints.append(
                 (
+                    cell,
                     self.get(cell),
-                    self.get_neighbors(cell, -2)
+                    set(self.get_neighbors(cell, -2))
                 )
             )
 
@@ -393,8 +409,9 @@ class CSPSolver(EnumerationSolver):
         # Make deductions
         self.deduce()
 
-        # Solve with backtracking
-        self.run_backtrack()
+        # Populate equations
+        self.set_constraints()
+        self.subtract_constraints()
 
         # Remove revealed cells
         self.revise_to_click()
@@ -427,16 +444,41 @@ class CSPSolver(EnumerationSolver):
 
         return True, cell
 
-    def run_backtrack(self):
-        pass
+    def subtract_constraints(self) -> None:
+        """Subtract neighboring number tiles.
 
-    def backtrack(self) -> bool:
-        return False
+        If number of remaining unknowns = number of mines,
+        Mark all remaining unknowns as mines.
 
-    def reduce(self):
-        pass
+        """
+        for comb in itertools.combinations(self.constraints, 2):
+            # Unpack
+            con1, con2 = comb
+            cell1, val1, cells1 = con1
+            cell2, val2, cells2 = con2
+
+            # Resolve trivial cases
+            if len(cells1) == val1:
+                self.to_flag.extend(cells1)
+                return None
+            elif len(cells2) == val2:
+                self.to_flag.extend(cells2)
+                return None
 
 
+            # If neighbor
+            if cell2 in self.get_neighbors(cell1, 1):
+                # subtract
+                val = val1 - val2
+                # difference
+                diff = cells1 - cells2
+                # union: must be free
+                union = cells1.union(cells2)
+                # if number of remaining unknowns = number of mines
+                if len(diff) == val:
+                    self.to_flag.extend(diff)
+                    self.to_click.extend(union)
+                    return None
 """
 For CSP:
 # Initialize queue of constraints
