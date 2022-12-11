@@ -3,32 +3,39 @@ import itertools
 import queue
 import math
 
+from typing import Optional, NamedTuple
+
+class Cell(NamedTuple):
+    """Cell class (a named tuple.)
+    """
+    x: int
+    y: int
+
 MAX_COMBS = 10000
 
 
-def get_neighbors(index: tuple[int, int], height: int = 9, width: int = 9) -> list[tuple[int, int]]:
+def get_neighbors(cell: Cell, height: int = 9, width: int = 9) -> list[Cell]:
     """Returns a list of neighbors for a cell.
 
     Args:
-        index (tuple[int, int]): cell to search neighbors for
+        index (Cell): cell to search neighbors for
         height (int): x-axis size (lists)
         width (int): y-axis size (lists in each list)
 
     Returns:
-        list[tuple[int, int]]: list of neighbors of cell at index.
+        list[Cell]: list of neighbors of cell at index.
     """
     neighbors = []
-    x1, y1 = index
     for dx in (-1, 0, 1):
         for dy in (-1, 0, 1):
             if dx == 0 and dy == 0:
                 continue
-            x2, y2 = x1 + dx, y1 + dy
-            if x2 < 0 or x2 >= height:
+            neighbor = Cell(cell.x + dx, cell.y + dy)
+            if neighbor.x < 0 or neighbor.x >= height:
                 continue
-            if y2 < 0 or y2 >= width:
+            if neighbor.y < 0 or neighbor.y >= width:
                 continue
-            neighbors.append((x2, y2))
+            neighbors.append(neighbor)
     return neighbors
 
 
@@ -74,9 +81,9 @@ class Solver:
         self.firstclick: bool = True
 
         # Set of mines, flags, and revealed cells
-        self.mines: set[tuple[int, int]] = set()
-        self.flags: set[tuple[int, int]] = set()
-        self.revealed: set[tuple[int, int]] = set()
+        self.mines: set[Cell] = set()
+        self.flags: set[Cell] = set()
+        self.revealed: set[Cell] = set()
 
         # initialize visible board with unknowns (-2)
         self.vboard: list[list[int]] = []
@@ -86,7 +93,7 @@ class Solver:
                 row.append(0)
             self.vboard.append(row)
 
-    def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+    def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
         """Clicks on the board.
 
         The solver should click on a relatively safer cell if there is no safe action determined.
@@ -103,11 +110,11 @@ class Solver:
         """
         return NotImplemented
 
-    def get(self, cell: tuple[int, int]) -> int:
+    def get(self, cell: Cell) -> int:
         """Get contents of cell on the (visible) board.
 
         Args:
-            cell (tuple[int, int]): cell to get contents for.
+            cell (Cell): cell to get contents for.
 
         Returns:
             int: contents of cell.
@@ -115,7 +122,7 @@ class Solver:
         i, j = cell
         return self.vboard[i][j]
 
-    def get_cells(self, status: int) -> list[tuple[int, int]]:
+    def get_cells(self, status: int) -> list[Cell]:
         """Get cells on the board.
 
         Args:
@@ -127,12 +134,12 @@ class Solver:
                 -3: flag
 
         Returns:
-            list[tuple[int, int]]: cells asked for.
+            list[Cell]: cells asked for.
         """
         cells = []
         for i in range(self.height):
             for j in range(self.width):
-                cell = i, j
+                cell = Cell(i, j)
                 if status > 0:
                     if self.get(cell) > 0:
                         cells.append(cell)
@@ -140,11 +147,11 @@ class Solver:
                     cells.append(cell)
         return cells
 
-    def get_neighbors(self, cell: tuple[int, int], status: int) -> list[tuple[int, int]]:
+    def get_neighbors(self, cell: Cell, status: int) -> list[Cell]:
         """Get unknown neighbors of a cell.
 
         Args:
-            cell (tuple[int, int]): cell to get neighbors for.
+            cell (Cell): cell to get neighbors for.
             status (int): status of neighbors to get.
                 1-8: number cells
                 0: empty cells
@@ -153,7 +160,7 @@ class Solver:
                 -3: flag
 
         Returns:
-            list[tuple[int, int]]: unknown neighbors of cell.
+            list[Cell]: unknown neighbors of cell.
         """
         if status > 0:
             return [neighbor for neighbor in get_neighbors(cell) if self.get(neighbor) > 0]
@@ -169,15 +176,14 @@ class RandomClicker(Solver):
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         super().__init__(height, width, mine_count)
 
-    def click(self, board: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+    def click(self, board: list[list[int]]) -> tuple[bool, Cell]:
 
-        i = random.randrange(self.height)
-        j = random.randrange(self.width)
+        cell = Cell(random.randrange(self.height), random.randrange(self.width))
         click = True
 
         self.firstclick = False
 
-        return click, (i, j)
+        return click, cell
 
 
 class RandomFlagger(Solver):
@@ -188,14 +194,13 @@ class RandomFlagger(Solver):
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         super().__init__(height, width, mine_count)
 
-    def click(self, board: list[list[int]]) -> tuple[bool, tuple[int, int]]:
-        i = random.randrange(self.height)
-        j = random.randrange(self.width)
+    def click(self, board: list[list[int]]) -> tuple[bool, Cell]:
+        cell = Cell(random.randrange(self.height), random.randrange(self.width))
         click = False
 
         self.firstclick = False
 
-        return click, (i, j)
+        return click, cell
 
 
 class DeductionSolver(Solver):
@@ -209,10 +214,10 @@ class DeductionSolver(Solver):
         super().__init__(height, width, mine_count)
 
         # queue of operations
-        self.to_click: list[tuple[int, int]] = []
-        self.to_flag: list[tuple[int, int]] = []
+        self.to_click: list[Cell] = []
+        self.to_flag: list[Cell] = []
 
-    def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+    def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
 
         # Update board
         self.vboard = vboard
@@ -275,7 +280,7 @@ class EnumerationSolver(DeductionSolver):
 
         super().__init__(height, width, mine_count)
 
-    def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+    def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
         # Update board
         self.vboard = vboard
 
@@ -299,7 +304,7 @@ class EnumerationSolver(DeductionSolver):
         if self.firstclick:
             # First click: top left
             self.firstclick = False
-            cell = (0, 0)
+            cell = Cell(0, 0)
         else:
             # Not first click: calculate probabilities
             # if efficient, brute-force enumerate
@@ -313,7 +318,7 @@ class EnumerationSolver(DeductionSolver):
 
         return True, cell
 
-    def enumerate_probs(self) -> queue.Queue[tuple[float, tuple[int, int]]]:
+    def enumerate_probs(self) -> queue.Queue[tuple[float, Cell]]:
         """Enumerates mine configurations and calculates mine probabilities.
         """
         # Generate all possible boards
@@ -323,11 +328,9 @@ class EnumerationSolver(DeductionSolver):
             for conf in itertools.combinations(self.get_cells(-2), mines_left):
                 board = [[0] * self.width for _ in range(self.height)]
                 for mine in conf:
-                    i, j = mine
-                    board[i][j] = -1
+                    board[mine.x][mine.y] = -1
                 for mine in self.get_cells(-3):
-                    i, j = mine
-                    board[i][j] = -1
+                    board[mine.x][mine.y] = -1
                 self.boards.append(board)
 
         # Eliminate boards from constraints
@@ -351,9 +354,8 @@ class EnumerationSolver(DeductionSolver):
         total_boards = len(self.boards)
         for cell in self.get_cells(-2):
             mines = 0
-            i, j = cell
             for board in self.boards:
-                if board[i][j] == 0:
+                if board[cell.x][cell.y] == 0:
                     mines += 1
             probs.put((mines / total_boards, cell))
 
@@ -368,7 +370,7 @@ class CSPSolver(EnumerationSolver):
 
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         # List of number cells
-        self.constraints: list[tuple[int, list[tuple[int, int]]]] = []
+        self.constraints: list[tuple[int, list[Cell]]] = []
 
         super().__init__(height, width, mine_count)
 
@@ -384,7 +386,7 @@ class CSPSolver(EnumerationSolver):
                 )
             )
 
-    def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+    def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
         # Update board
         self.vboard = vboard
 
@@ -411,7 +413,7 @@ class CSPSolver(EnumerationSolver):
         if self.firstclick:
             # First click: top left
             self.firstclick = False
-            cell = (0, 0)
+            cell = Cell(0, 0)
         else:
             # Not first click: calculate probabilities
             # if efficient, brute-force enumerate
