@@ -253,7 +253,7 @@ class DeductionSolver(Solver):
 
         # No actions exist
         # Click on random unknown
-        return True, self.get_cells(-2).pop()
+        return True, random.choice(self.get_cells(-2))
 
     def deduce(self) -> None:
         """Deduce flags / empty cells given current board.
@@ -327,7 +327,7 @@ class EnumerationSolver(DeductionSolver):
                 prob, cell = probs.get()
             else:
                 # Click on random unknown
-                cell = self.get_cells(-2).pop()
+                cell = random.choice(self.get_cells(-2))
 
         return True, cell
 
@@ -440,7 +440,7 @@ class EquationSolver(EnumerationSolver):
                 prob, cell = probs.get()
             else:
                 # Click on random unknown
-                cell = self.get_cells(-2).pop()
+                cell = random.choice(self.get_cells(-2))
 
         return True, cell
 
@@ -479,11 +479,3 @@ class EquationSolver(EnumerationSolver):
                     self.to_flag.extend(diff)
                     self.to_click.extend(union)
                     return None
-"""
-For CSP:
-# Initialize queue of constraints
-# By ascending order of number
-# Rationale: detect failure as early as possible
-self.constraints = sorted(
-    self.get_cells(1), key=lambda cell: self.get(cell))
-"""
