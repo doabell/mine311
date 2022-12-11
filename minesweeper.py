@@ -8,11 +8,15 @@ from solvers import *
 EASY = (9, 9, 10)
 INTERMEDIATE = (16, 16, 40)
 EXPERT = (16, 30, 99)
+DIFFICULTIES: dict[str, tuple[int, int, int]] = {
+    "EASY": EASY,
+    "INTERMEDIATE": INTERMEDIATE,
+    "EXPERT": EXPERT
+}
 
 # Test parameters
 NUM_GAMES = 100
-DIFFICULTY = EASY
-SOLVER = RandomClicker
+SOLVER = DeductionSolver
 
 
 class MineSweeperGame():
@@ -270,30 +274,33 @@ class MineSweeperGame():
 
 
 if __name__ == "__main__":
-    times = []
-    outcomes = []
-    for i in range(NUM_GAMES):
-        steptimes = []
-        h, w, m = DIFFICULTY
-        game = MineSweeperGame(h, w, m)
-        solve = SOLVER(h, w, m)
-        while game.outcome() is None:
-            board = game.vboard
-            start = time.perf_counter()
-            click, cell = solve.click(board)
-            if click:
-                game.click(cell)
-            else:
-                game.flag(cell)
-            end = time.perf_counter()
-            steptimes.append(end - start)
-        times.append(sum(steptimes))
-        outcomes.append(game.outcome())
+    print(f"======== Performance of {SOLVER.__name__} ========")
+    for diffname, diff in DIFFICULTIES.items():
+        print(f"==== {diffname} ====")
+        times = []
+        outcomes = []
+        for i in range(NUM_GAMES):
+            steptimes = []
+            h, w, m = diff
+            game = MineSweeperGame(h, w, m)
+            solve = SOLVER(h, w, m)
+            while game.outcome() is None:
+                board = game.vboard
+                start = time.perf_counter()
+                click, cell = solve.click(board)
+                if click:
+                    game.click(cell)
+                else:
+                    game.flag(cell)
+                end = time.perf_counter()
+                steptimes.append(end - start)
+            times.append(sum(steptimes))
+            outcomes.append(game.outcome())
 
-    print(
-        f"Minimum time {min(times)}s, Average time {sum(times) / NUM_GAMES}s (over {NUM_GAMES} games)"
-    )
+        print(
+            f"Minimum time {min(times) * 1000 :.5f} ms, Average time {sum(times) / NUM_GAMES * 1000 :.5f} ms (over {NUM_GAMES} games)"
+        )
 
-    print(
-        f"Won {sum(outcomes)} of {NUM_GAMES} games, success rate {sum(outcomes) / NUM_GAMES}"
-    )
+        print(
+            f"Won {sum(outcomes)} of {NUM_GAMES} games, success rate {sum(outcomes) / NUM_GAMES}"
+        )
