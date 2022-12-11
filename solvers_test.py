@@ -50,14 +50,14 @@ def make_tests(SolverClass: type, smart=True) -> type[unittest.TestCase]:
             trivial = m.MineSweeperGame(5, 5, 1)
             solve = SolverClass(5, 5, 1)
             trivial.board = [
-                [-1, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
+                [0, 0, -1, 0, 0],
                 [0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0]
             ]
             trivial.populate_board()
-            trivial.mines = {(0, 0)}
+            trivial.mines = {(1, 2)}
 
             # Run game
             while trivial.outcome() is None:
@@ -79,4 +79,7 @@ class RandomClickerTest(make_tests(RandomClicker, smart=False)):
 
 
 class RandomFlaggerTest(make_tests(RandomFlagger, smart=False)):
+    pass
+
+class CSPSolverTest(make_tests(CSPSolver, smart=True)):
     pass
