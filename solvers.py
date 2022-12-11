@@ -2,9 +2,11 @@ import random
 import itertools
 import queue
 import math
+import sympy as sp
 
 from typing import Optional, NamedTuple
 
+MAX_COMBS = 5000
 
 class Cell(NamedTuple):
     """Cell class.
@@ -20,9 +22,6 @@ class Cell(NamedTuple):
         if not isinstance(other, Cell):
             return NotImplemented
         return self.x == other.x and self.y == other.y
-
-
-MAX_COMBS = 10000
 
 
 def get_neighbors(cell: Cell, height: int = 9, width: int = 9) -> list[Cell]:
@@ -96,6 +95,10 @@ class Solver:
         self.flags: set[Cell] = set()
         self.revealed: set[Cell] = set()
 
+        # queue of operations
+        self.to_click: list[Cell] = []
+        self.to_flag: list[Cell] = []
+
         # initialize visible board with unknowns (-2)
         self.vboard: list[list[int]] = []
         for i in range(self.height):
@@ -103,6 +106,17 @@ class Solver:
             for j in range(self.width):
                 row.append(0)
             self.vboard.append(row)
+
+    def revise_to_click(self) -> None:
+        """Revise to_click to only include unknown cells.
+
+        This happens because a cascade may reveal a cell in to_click.
+        """
+        revised = []
+        for cell in self.to_click:
+            if self.get(cell) == -2:
+                revised.append(cell)
+        self.to_click = revised
 
     def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
         """Clicks on the board.
@@ -216,6 +230,108 @@ class RandomFlagger(Solver):
         return click, cell
 
 
+class MatrixSolver(Solver):
+    """Solver Minesweeper with matrices.
+
+    Matrix row: number square with unknown neighbors.
+    Matrix column: unknown tiles.
+    """
+
+    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
+        super().__init__(height, width, mine_count)
+
+    def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
+        # Update board
+        self.vboard = vboard
+
+        # Make deductions
+        self.deduce_matrix()
+
+        # Remove revealed cells
+        self.revise_to_click()
+
+        self.firstclick = False
+
+        # If actions exist:
+        # Pop a click action
+        if len(self.to_click) > 0:
+            return True, self.to_click.pop()
+        # Pop a flag action
+        if len(self.to_flag) > 0:
+            return False, self.to_flag.pop()
+
+        # No actions exist
+        # Click on random unknown
+        return True, random.choice(self.get_cells(-2))
+
+    def deduce_matrix(self) -> None:
+        """Create deduction matrix and deduce.
+        """
+        # Populate rows & columns
+        # Get number cells with unknown neighbors
+        rows: list[Cell] = []
+        # List of unknown tiles
+        cols: list[Cell] = []
+        for cell in self.get_cells(1):
+            unknowns = self.get_neighbors(cell, -2)
+            if len(unknowns) > 0:
+                rows.append(cell)
+                cols.extend(unknowns)
+
+        # If there are no columns
+        if len(cols) == 0:
+            return None
+
+        # Remove duplicate cols
+        cols = list(set(cols))
+
+        # Calculate matrix
+        matrix: sp.Matrix = sp.zeros(len(rows), len(cols))
+        for i, row in enumerate(rows):
+            for j, col in enumerate(cols):
+                matrix[i, j] = int(col in self.get_neighbors(row, -2))
+        # Insert coefficients
+        coeffs: sp.Matrix = sp.Matrix([self.get(row) for row in rows])
+        matrix = matrix.col_insert(len(cols), coeffs)
+
+        # Solve matrix
+        matrix, _ = matrix.rref()
+
+        # Make deductions
+        # Going from bottom
+        # For each row:
+        for i in range(len(rows) - 1, -1, -1):
+            # lower & upper bounds of coefficient
+            # because mine or no mine (1 or 0)
+            low, high = 0, 0
+            # This DOES NOT include the coefficient
+            for j in range(len(cols)):
+                val: int = matrix[i, j]  # type: ignore
+                if val < 0:
+                    low += val
+                elif val > 0:
+                    high += val
+            coeff: int = matrix[i, len(cols)]  # type: ignore
+            if coeff == low:
+                for j in range(len(cols)):
+                    val: int = matrix[i, j]  # type: ignore
+                    # negatives are mines
+                    if val < 0:
+                        self.to_flag.append(cols[j])
+                    # positives are empty
+                    elif val > 0:
+                        self.to_click.append(cols[j])
+            elif coeff == high:
+                for j in range(len(cols)):
+                    val: int = matrix[i, j]  # type: ignore
+                    # negatives are empty
+                    if val < 0:
+                        self.to_click.append(cols[j])
+                    # positives are mines
+                    elif val > 0:
+                        self.to_flag.append(cols[j])
+
+
 class DeductionSolver(Solver):
     """Solves Minesweeper with Deduction.
 
@@ -225,10 +341,6 @@ class DeductionSolver(Solver):
 
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
         super().__init__(height, width, mine_count)
-
-        # queue of operations
-        self.to_click: list[Cell] = []
-        self.to_flag: list[Cell] = []
 
     def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
 
@@ -270,17 +382,6 @@ class DeductionSolver(Solver):
                 self.to_click.extend(unknowns)
             elif len(flagged) + len(unknowns) == self.get(cell):
                 self.to_flag.extend(unknowns)
-
-    def revise_to_click(self) -> None:
-        """Revise to_click to only include unknown cells.
-
-        This happens because a cascade may reveal a cell in to_click.
-        """
-        revised = []
-        for cell in self.to_click:
-            if self.get(cell) == -2:
-                revised.append(cell)
-        self.to_click = revised
 
 
 class EnumerationSolver(DeductionSolver):
@@ -379,8 +480,6 @@ class EquationSolver(EnumerationSolver):
     """Solves minesweeper as set of equation constraints
 
     Constraints: sums (numbered tiles) and the corresponding cells.
-
-    TODO does not work as of now.
     """
 
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
@@ -465,7 +564,6 @@ class EquationSolver(EnumerationSolver):
                 self.to_flag.extend(cells2)
                 return None
 
-
             # If neighbor
             if cell2 in self.get_neighbors(cell1, 1):
                 # subtract
@@ -479,3 +577,15 @@ class EquationSolver(EnumerationSolver):
                     self.to_flag.extend(diff)
                     self.to_click.extend(union)
                     return None
+
+
+class CSPSolver(EnumerationSolver):
+    """Solves Minesweeper as CSP
+    
+    """
+
+    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
+        super().__init__(height, width, mine_count)
+    
+    def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
+        return NotImplemented

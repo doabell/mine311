@@ -10,10 +10,6 @@ EXPERT = (16, 30, 99)
 # Games to test in test_game_ends()
 NUM_GAMES = 10
 
-# TODO find some known solvable games to solve?
-# TODO write up a hard-coded solver to test these tests
-
-
 def make_tests(SolverClass: type, smart=True) -> type[unittest.TestCase]:
     """
     Creates test cases for the solver.
@@ -77,9 +73,17 @@ def make_tests(SolverClass: type, smart=True) -> type[unittest.TestCase]:
 class RandomClickerTest(make_tests(RandomClicker, smart=False)):
     pass
 
-
 class RandomFlaggerTest(make_tests(RandomFlagger, smart=False)):
     pass
 
+class MatrixSolverTest(make_tests(MatrixSolver, smart=True)):
+    pass
+
 class DeductionSolverTest(make_tests(DeductionSolver, smart=True)):
+    pass
+
+class EnumerationSolverTest(make_tests(EnumerationSolver, smart=True)):
+    pass
+
+class EquationSolverTest(make_tests(EquationSolver, smart=True)):
     pass

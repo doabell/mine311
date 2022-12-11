@@ -16,7 +16,7 @@ DIFFICULTIES: dict[str, tuple[int, int, int]] = {
 
 # Test parameters
 NUM_GAMES = 100
-SOLVER = EnumerationSolver
+SOLVER = EquationSolver
 
 
 class MineSweeperGame():
