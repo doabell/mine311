@@ -1,16 +1,16 @@
 import random
 
 
-def find_neighbors(index: tuple[int, int], height: int = 9, width: int = 9) -> list[tuple[int, int]]:
-    """Returns a list of neighbors for a tile.
+def get_neighbors(index: tuple[int, int], height: int = 9, width: int = 9) -> list[tuple[int, int]]:
+    """Returns a list of neighbors for a cell.
 
     Args:
-        index (tuple[int, int]): tile to search neighbors for
+        index (tuple[int, int]): cell to search neighbors for
         height (int): x-axis size (lists)
         width (int): y-axis size (lists in each list)
 
     Returns:
-        list[tuple[int, int]]: list of neighbors of tile at index.
+        list[tuple[int, int]]: list of neighbors of cell at index.
     """
     neighbors = []
     x1, y1 = index
@@ -77,10 +77,10 @@ class Solver:
                 row.append(0)
             self.vboard.append(row)
 
-    def click(self, board: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+    def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
         """Clicks on the board.
 
-        The solver should click on a relatively safer tile if there is no safe action determined.
+        The solver should click on a relatively safer cell if there is no safe action determined.
         The solver should only flag mines when certain, and take care to not exceed the total number of mines.
 
         Args:
@@ -92,8 +92,69 @@ class Solver:
                 (int, int): the
             )
         """
-        self.vboard = board
         return NotImplemented
+    
+    def get(self, cell: tuple[int, int]) -> int:
+        """Get contents of cell on the (visible) board.
+
+        Args:
+            cell (tuple[int, int]): cell to get contents for.
+        
+        Returns:
+            int: contents of cell.
+        """
+        i, j = cell
+        return self.vboard[i][j]
+    
+    def get_number_cells(self) -> list[tuple[int, int]]:
+        """Get number cells on the board.
+        
+        Returns:
+            list[tuple[int, int]]: unknown neighbors of cell.
+        """
+        numbers = []
+        for i in range(self.height):
+            for j in range(self.width):
+                cell = i, j
+                if self.get(cell) > 0:
+                    numbers.append(cell)
+        return numbers
+    
+    def get_unknown_cells(self) -> list[tuple[int, int]]:
+        """Get unknown cells on the board.
+        
+        Returns:
+            list[tuple[int, int]]: unknown neighbors of cell.
+        """
+        unknown = []
+        for i in range(self.height):
+            for j in range(self.width):
+                cell = i, j
+                if self.get(cell) == -2:
+                    unknown.append(cell)
+        return unknown
+    
+    def get_unknown_neighbors(self, cell: tuple[int, int]) -> list[tuple[int, int]]:
+        """Get unknown neighbors of a cell.
+
+        Args:
+            cell (tuple[int, int]): cell to get unknown neighbors for.
+        
+        Returns:
+            list[tuple[int, int]]: unknown neighbors of cell.
+        """
+        return [neighbor for neighbor in get_neighbors(cell) if self.get(neighbor) == -2]
+    
+    def get_flagged_neighbors(self, cell: tuple[int, int]) -> list[tuple[int, int]]:
+        """Get flaggged neighbors of a cell.
+
+        Args:
+            cell (tuple[int, int]): cell to get flagged neighbors for.
+        
+        Returns:
+            list[tuple[int, int]]: flagged neighbors of cell.
+        """
+        return [neighbor for neighbor in get_neighbors(cell) if self.get(neighbor) == -3]
 
 
 class RandomClicker(Solver):
