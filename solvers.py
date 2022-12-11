@@ -187,8 +187,10 @@ class RandomFlagger(Solver):
         return click, (i, j)
 
 
-class CSPSolver(Solver):
-    """Solves Minesweeper with CSP.
+class DeductionSolver(Solver):
+    """Solves Minesweeper with Deduction.
+
+    Single-tile based deductions when enough neighbors are flagged / uncovered.
 
     """
 
@@ -199,21 +201,15 @@ class CSPSolver(Solver):
         self.to_click: list[tuple[int, int]] = []
         self.to_flag: list[tuple[int, int]] = []
 
-        # Constraints
-        self.constraints: dict[tuple[int, int], tuple[int, int]] = {}
-
-        # TODO what is this
-        self.deleted_constraints: list = []
-
-    def click(self, board: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+    def click(self, vboard: list[list[int]]) -> tuple[bool, tuple[int, int]]:
+        # Update board
+        self.vboard = vboard
+        
         # Make deductions
-        self.prune()
+        self.deduce()
 
-        self.add_constraints()
-
-        self.flag_trivial()
-
-        self.reduce_constraints()
+        # Remove revealed cells
+        self.revise_to_click()
 
         # If actions exist:
         # Pop a click action
@@ -224,29 +220,32 @@ class CSPSolver(Solver):
             return False, self.to_flag.pop()
 
         # No actions exist
-        # TODO Click on random mine
+        # Click on random unknown
+        return True, self.get_unknown_cells().pop()
+    
+    def deduce(self):
+        """Deduce flags / empty cells given current board.
 
-        return super().click(board)
+        For each numbered cell:
+            If enough flagged neighbors, then unknown neighbors are empty.
+            If total neighbors == number on cell, then unknown neighbors are mines.
+        
+        """
+        for cell in self.get_number_cells():
+            flagged = self.get_flagged_neighbors(cell)
+            unknowns = self.get_unknown_neighbors(cell)
+            if len(flagged) == self.get(cell):
+                self.to_click.extend(unknowns)
+            elif len(flagged) + len(unknowns) == self.get(cell):
+                self.to_flag.extend(unknowns)
+    
+    def revise_to_click(self):
+        """Revise to_click to only include unknown cells.
 
-    def prune(self):
-        pass
-
-    def add_constraints(self):
-        for cell in self.revealed:
-            if self.vboard[cell[0]][cell[1]] != 0:
-                if (cell not in self.constraints) and (cell not in self.deleted_constraints):
-                    i, j = cell
-                    unknown_neighbors = {tile for tile in find_neighbors(
-                        cell) if self.vboard[i][j] == -2}
-                    self.constraints[cell] = [
-                        unknown_neighbors, self.vboard[cell[0]][cell[1]]]
-                    for tile in find_neighbors(cell):
-                        k, l = tile
-                        if self.vboard[k][l] == -3:
-                            self.constraints[cell][1] = self.constraints[cell][1]-1
-
-    def flag_trivial(self):
-        pass
-
-    def reduce_constraints(self):
-        pass
+        This happens because a cascade may reveal a cell in to_click.
+        """
+        revised = []
+        for cell in self.to_click:
+            if self.get(cell) == -2:
+                revised.append(cell)
+        self.to_click = revised

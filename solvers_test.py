@@ -81,5 +81,5 @@ class RandomClickerTest(make_tests(RandomClicker, smart=False)):
 class RandomFlaggerTest(make_tests(RandomFlagger, smart=False)):
     pass
 
-class CSPSolverTest(make_tests(CSPSolver, smart=True)):
+class DeductionSolverTest(make_tests(DeductionSolver, smart=True)):
     pass
