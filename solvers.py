@@ -5,6 +5,7 @@ import math
 
 MAX_COMBS = 10000
 
+
 def get_neighbors(index: tuple[int, int], height: int = 9, width: int = 9) -> list[tuple[int, int]]:
     """Returns a list of neighbors for a cell.
 
@@ -169,7 +170,7 @@ class RandomClicker(Solver):
         super().__init__(height, width, mine_count)
 
     def click(self, board: list[list[int]]) -> tuple[bool, tuple[int, int]]:
-        
+
         i = random.randrange(self.height)
         j = random.randrange(self.width)
         click = True
@@ -235,10 +236,6 @@ class DeductionSolver(Solver):
         # No actions exist
         # Click on random unknown
         return True, self.get_cells(-2).pop()
-
-    def click_queue(self) -> None:
-        """Click or flag remaining items in to_click and to_flag queues.
-        """
 
     def deduce(self) -> None:
         """Deduce flags / empty cells given current board.
@@ -314,9 +311,6 @@ class EnumerationSolver(DeductionSolver):
                 # Click on random unknown
                 cell = self.get_cells(-2).pop()
 
-
-        
-        
         return True, cell
 
     def enumerate_probs(self) -> queue.Queue[tuple[float, tuple[int, int]]]:
