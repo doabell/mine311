@@ -87,3 +87,15 @@ class EnumerationSolverTest(make_tests(EnumerationSolver, smart=True)):
 
 class EquationSolverTest(make_tests(EquationSolver, smart=True)):
     pass
+
+class CSPSolverTest(make_tests(CSPSolver, smart=True)):
+    pass
+
+class CSPDeductionSolverTest(make_tests(CSPDeductionSolver, smart=True)):
+    pass
+
+class CSPEnumerationSolverTest(make_tests(CSPEnumerationSolver, smart=True)):
+    pass
+
+class CDESolverTest(make_tests(CDESolver, smart=True)):
+    pass
