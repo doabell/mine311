@@ -9,6 +9,7 @@ from typing import Optional, NamedTuple
 
 MAX_COMBS = 5000
 
+
 class Cell(NamedTuple):
     """Cell class.
 
@@ -25,7 +26,7 @@ class Cell(NamedTuple):
         return self.x == other.x and self.y == other.y
 
 
-def get_neighbors(cell: Cell, height: int = 9, width: int = 9) -> list[Cell]:
+def get_neighbors_box(cell: Cell, height: int = 9, width: int = 9) -> list[Cell]:
     """Returns a list of neighbors for a cell.
 
     Args:
@@ -90,6 +91,9 @@ class Solver:
 
         # If the next click is a first click
         self.firstclick: bool = True
+
+        # If the current move is random
+        self.random: bool = False
 
         # Set of mines, flags, and revealed cells
         self.mines: set[Cell] = set()
@@ -189,18 +193,23 @@ class Solver:
             list[Cell]: unknown neighbors of cell.
         """
         if status > 0:
-            return [neighbor for neighbor in get_neighbors(cell) if self.get(neighbor) > 0]
+            return [
+                neighbor
+                for neighbor in get_neighbors_box(cell, self.height, self.width)
+                if self.get(neighbor) > 0
+            ]
         else:
-            return [neighbor for neighbor in get_neighbors(cell) if self.get(neighbor) == status]
+            return [
+                neighbor
+                for neighbor in get_neighbors_box(cell, self.height, self.width)
+                if self.get(neighbor) == status
+            ]
 
 
 class RandomClicker(Solver):
     """Solver that clicks randomly.
     Eventually fails, since it eventually clicks on a mine.
     """
-
-    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
-        super().__init__(height, width, mine_count)
 
     def click(self, board: list[list[int]]) -> tuple[bool, Cell]:
 
@@ -209,6 +218,7 @@ class RandomClicker(Solver):
         click = True
 
         self.firstclick = False
+        self.random = True
 
         return click, cell
 
@@ -218,15 +228,13 @@ class RandomFlagger(Solver):
     Eventually fails, since it eventually exceeds the mine count.
     """
 
-    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
-        super().__init__(height, width, mine_count)
-
     def click(self, board: list[list[int]]) -> tuple[bool, Cell]:
         cell = Cell(random.randrange(self.height),
                     random.randrange(self.width))
         click = False
 
         self.firstclick = False
+        self.random = True
 
         return click, cell
 
@@ -238,10 +246,10 @@ class MatrixSolver(Solver):
     Matrix column: unknown tiles.
     """
 
-    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
-        super().__init__(height, width, mine_count)
-
     def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
+        # Refresh
+        self.random = False
+
         # Update board
         self.vboard = vboard
 
@@ -263,6 +271,7 @@ class MatrixSolver(Solver):
 
         # No actions exist
         # Click on random unknown
+        self.random = True
         return True, random.choice(self.get_cells(-2))
 
     def deduce_matrix(self) -> None:
@@ -340,10 +349,9 @@ class DeductionSolver(Solver):
 
     """
 
-    def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
-        super().__init__(height, width, mine_count)
-
     def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
+        # Refresh status
+        self.random = False
 
         # Update board
         self.vboard = vboard
@@ -366,6 +374,7 @@ class DeductionSolver(Solver):
 
         # No actions exist
         # Click on random unknown
+        self.random = True
         return True, random.choice(self.get_cells(-2))
 
     def deduce(self) -> None:
@@ -396,6 +405,8 @@ class EnumerationSolver(DeductionSolver):
         super().__init__(height, width, mine_count)
 
     def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
+        # Refresh status
+        self.random = False
         # Update board
         self.vboard = vboard
 
@@ -429,6 +440,7 @@ class EnumerationSolver(DeductionSolver):
                 prob, cell = probs.get()
             else:
                 # Click on random unknown
+                self.random = True
                 cell = random.choice(self.get_cells(-2))
 
         return True, cell
@@ -454,7 +466,7 @@ class EnumerationSolver(DeductionSolver):
             valid = True
             for cell in self.get_cells(1):
                 mines = 0
-                for neighbor in get_neighbors(cell):
+                for neighbor in get_neighbors_box(cell, self.height, self.width):
                     i, j = neighbor
                     if board[i][j] == -1:
                         mines += 1
@@ -503,6 +515,7 @@ class EquationSolver(EnumerationSolver):
             )
 
     def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
+        # Refresh status
         # Update board
         self.vboard = vboard
 
@@ -540,6 +553,7 @@ class EquationSolver(EnumerationSolver):
                 prob, cell = probs.get()
             else:
                 # Click on random unknown
+                self.random = True
                 cell = random.choice(self.get_cells(-2))
 
         return True, cell
