@@ -3,6 +3,7 @@ import itertools
 import queue
 import math
 import sympy as sp
+import copy
 
 from typing import Optional, NamedTuple
 
@@ -583,9 +584,184 @@ class CSPSolver(EnumerationSolver):
     """Solves Minesweeper as CSP
     
     """
-
     def __init__(self, height: int = 9, width: int = 9, mine_count: int = 10) -> None:
+        self.constraints: dict(tuple)={}
+        self.deletedconstraints=[]
+        self.oldfreecells: set[Cell]=set()
+        self.newfreecells:set[Cell]=set()
         super().__init__(height, width, mine_count)
-    
+
+    def update_revealed(self):
+        """Update list of revealed cells
+        """
+        revealed_cells= self.get_cells(0)+self.get_cells(1)
+        for cell in revealed_cells:
+            self.revealed.add(cell)
+        return None
+        
+    def addconstraints(self):
+        for i in range(self.height):
+            for j in range(self.width):
+                if self.vboard[i][j] >0:
+                    cell=Cell(i,j)
+                    if (cell not in self.constraints.keys()) and (cell not in self.deletedconstraints):
+                        unknownneighs=set() #set of Cell objects
+                        for neighbor in get_neighbors(cell):
+                            if self.get(neighbor)==-2:
+                                unknownneighs.add(neighbor)
+                        self.constraints[cell]=[unknownneighs, self.get(cell)]
+                        for neighbor in get_neighbors(cell): #decrement mine counts
+                            if self.get(neighbor)==-3:
+                                self.constraints[cell][1]=self.constraints[cell][1]-1
+        return None
+
+    def pruneunknownneighs(self):
+        for constraint in self.constraints:
+            unknownneighscopy=self.constraints[constraint][0].copy()
+            for unknownneigh in unknownneighscopy:
+                for newfreecell in self.newfreecells:
+                    if unknownneigh==newfreecell:
+                        self.constraints[constraint][0].remove(unknownneigh)
+        return None
+    def trivialflag(self):
+        constraintscopy=copy.deepcopy(self.constraints)
+        for constraint in constraintscopy:
+            if len(self.constraints[constraint][0])==self.constraints[constraint][1]:
+                if len(self.constraints[constraint][0])==0 and self.constraints[constraint][1]==0:
+                    self.constraints.pop(constraint)
+                    self.deletedconstraints.append(constraint)
+                else: #all unknownneighs for constraint are mines
+                    minescopy=self.constraints[constraint][0].copy()
+                    self.deletedconstraints.append(constraint)
+                    self.constraints.pop(constraint)
+                    for mine in minescopy:
+                        self.to_flag.append(mine)
+                        for minesneigh in get_neighbors(mine):
+                            if minesneigh in self.constraints.keys() and len(self.constraints[minesneigh][0])!=0:
+#                                 print('self.constraints[minesneigh][0] ',self.constraints[minesneigh][0])
+                                if mine in self.constraints[minesneigh][0]:
+                                    self.constraints[minesneigh][0].remove(mine)
+                                    self.constraints[minesneigh][1]=self.constraints[minesneigh][1]-1
+        constraintscp2=copy.deepcopy(self.constraints)
+        for constraint in constraintscp2:
+            if self.constraints[constraint][1]==0:
+                self.trivialclick()
+                break
+            elif len(self.constraints[constraint][0])==self.constraints[constraint][1]:
+                self.trivialflag()
+                break
+        return None
+    def trivialclick(self):
+        constraintscopy=copy.deepcopy(self.constraints)
+        for constraint in constraintscopy:
+            if self.constraints[constraint][1]==0:
+                if len(self.constraints[constraint][0])==0 and self.constraints[constraint][1]==0:
+                    self.constraints.pop(constraint)
+                    self.deletedconstraints.append(constraint)
+                else: #all unknownneighs for constraint are mines
+                    freescopy=self.constraints[constraint][0].copy()
+                    self.deletedconstraints.append(constraint)
+                    self.constraints.pop(constraint)
+                    for free in freescopy:
+                        self.to_click.append(free)
+                        for freesneigh in get_neighbors(free):
+                            if freesneigh in self.constraints.keys():
+#                                 print('self.constraints[freesneigh][0] ',self.constraints[freesneigh][0])
+                                if free in self.constraints[freesneigh][0]:
+                                    self.constraints[freesneigh][0].remove(free)                            
+        constraintscp2=copy.deepcopy(self.constraints)
+        for constraint in constraintscp2:
+            if self.constraints[constraint][1]==0:
+                self.trivialclick()
+                break
+            elif len(self.constraints[constraint][0])==self.constraints[constraint][1]:
+                self.trivialflag()
+                break
+        return None
+    def constraintsreduction(self):
+        constraintscopy=copy.deepcopy(self.constraints)
+        for c1 in constraintscopy:
+            for c2 in constraintscopy:
+                if (c1!=c2) and (c1 in self.constraints.keys()) and (c2 in self.constraints.keys()):
+                    if self.constraints[c1][1]==self.constraints[c2][1] and self.constraints[c1][0]!=self.constraints[c2][0]:
+                        if self.constraints[c1][0].issubset(self.constraints[c2][0]):
+                            frees= (self.constraints[c2][0]-self.constraints[c1][0]).copy()
+                            for free in frees:
+                                self.to_click.append(free)
+                                for freesneigh in get_neighbors(free):
+                                    if freesneigh in self.constraints.keys():
+#                                         print('self.constraints[freesneigh][0] ',self.constraints[freesneigh][0], 'toremove',free)
+                                        if free in self.constraints[freesneigh][0]:
+                                            self.constraints[freesneigh][0].remove(free)
+                        elif self.constraints[c2][0].issubset(self.constraints[c1][0]):
+                            frees= (self.constraints[c1][0]-self.constraints[c2][0]).copy()
+                            for free in frees:
+                                self.to_click.append(free)
+                                for freesneigh in get_neighbors(free):
+                                    if freesneigh in self.constraints.keys():
+#                                         print('self.constraints[freesneigh][0] ',self.constraints[freesneigh][0])
+                                        if free in self.constraints[freesneigh][0]:
+                                            self.constraints[freesneigh][0].remove(free)
+        self.trivialflag()
+        constraintscpy2=copy.deepcopy(self.constraints)
+        for c1 in constraintscpy2:
+            for c2 in constraintscpy2:
+                if (c1!=c2) and (c1 in self.constraints.keys()) and (c2 in self.constraints.keys()):
+                    if (self.constraints[c1][1]==self.constraints[c2][1]) and (self.constraints[c1][0]!=self.constraints[c2][0]):
+                        if self.constraints[c1][0].issubset(self.constraints[c2][0]) or self.constraints[c2][0].issubset(self.constraints[c1][0]):
+                            print ('c1',self.constraints[c1],'c2',self.constraints[c2])
+                            self.constraintsreduction()
+                            break
+        return None
+                            
     def click(self, vboard: list[list[int]]) -> tuple[bool, Cell]:
-        return NotImplemented
+        #Update board
+        self.vboard=vboard
+        
+        self.update_revealed()
+        self.newfreecells=self.revealed.difference(self.oldfreecells)
+        self.pruneunknownneighs()
+        
+        #If actions exist:
+        #Pop a click action
+        if len(self.to_click)>0:
+            self.update_revealed()
+            self.oldfreecells=self.revealed.copy()
+            self.firstclick=False
+            return True, self.to_click.pop()
+        #Pop a flag action
+        if len(self.to_flag)>0:
+            self.update_revealed()
+            self.oldfreecells=self.revealed.copy()
+            self.firstclick=False
+            return False, self.to_flag.pop()
+
+        if self.firstclick:
+            #First click: top left
+            self.firstclick=False
+            cell=Cell(0,0)
+        else:
+            #Not first click:
+            #find All Free Neighbors and All Mine Neighbors and perform constraints reductions
+            self.addconstraints()
+            self.trivialflag()
+            self.constraintsreduction()
+            if len(self.to_click)>0:
+                self.update_revealed()
+                self.oldfreecells=self.revealed.copy()
+                self.firstclick=False
+                return True, self.to_click.pop()
+            elif len(self.to_flag)>0:
+                self.update_revealed()
+                self.oldfreecells=self.revealed.copy()
+                self.firstclick=False
+                return False, self.to_flag.pop()
+            else: 
+                #When no actions exist: click on a random unknown cell
+                self.update_revealed()
+                self.oldfreecells=self.revealed.copy()
+                self.firstclick=False
+                cell=random.choice(self.get_cells(-2))
+                print('random ', cell)
+        
+        return True, cell
