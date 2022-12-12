@@ -16,7 +16,7 @@ DIFFICULTIES: dict[str, tuple[int, int, int]] = {
 
 # Test parameters
 NUM_GAMES = 100
-SOLVER = EquationSolver
+SOLVER = CDESolver
 
 
 class MineSweeperGame():
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     print(f"======== Performance of {SOLVER.__name__} ========")
     for diffname, diff in DIFFICULTIES.items():
         print(f"==== {diffname} ====")
-        times = []
+        times: list[float] = []
         outcomes = []
         for i in range(NUM_GAMES):
             steptimes = []
