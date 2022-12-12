@@ -428,9 +428,9 @@ class EnumerationSolver(DeductionSolver):
 
         # When no actions exist
         if self.firstclick:
-            # First click: top left
+            # First click: center
             self.firstclick = False
-            cell = Cell(0, 0)
+            cell = Cell(self.height // 2, self.width // 2)
         else:
             # Not first click: calculate probabilities
             # if efficient, brute-force enumerate
@@ -541,9 +541,9 @@ class EquationSolver(EnumerationSolver):
 
         # When no actions exist
         if self.firstclick:
-            # First click: top left
+            # First click: center
             self.firstclick = False
-            cell = Cell(0, 0)
+            cell = Cell(self.height // 2, self.width // 2)
         else:
             # Not first click: calculate probabilities
             # if efficient, brute-force enumerate
@@ -764,9 +764,9 @@ class CSPSolver(EnumerationSolver):
             return False, self.to_flag.pop()
 
         if self.firstclick:
-            # First click: top left
+            # First click: center
             self.firstclick = False
-            cell = Cell(0, 0)
+            cell = Cell(self.height // 2, self.width // 2)
         else:
             # Not first click:
             # find All Free Neighbors and All Mine Neighbors and perform constraints reductions
